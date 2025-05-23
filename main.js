@@ -5,6 +5,7 @@ import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { USDZExporter } from 'three/examples/jsm/exporters/USDZExporter.js'
 import { FACETS } from './data';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 const FACETS_NAME = 'facets'
 const NINTY_DEGREES = THREE.MathUtils.degToRad(90);
@@ -55,40 +56,19 @@ fontLoader.load('./Roboto_Regular.json', function (font) {
     group.updateWorldMatrix(false, true)
     const color = 0x3b3b3b3;
     const intensity = 2;
-    const light = new THREE.AmbientLight(color, intensity);
+    const light = new THREE.DirectionalLight(color, intensity);
     group.add(light);
     scene.add(group)
 
     renderGrid()
 
-    // test animation clip
-    // const times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    // const values = [
-    //     0, 0, 0,
-    //     0, 50, 0,
-    //     0, 100, 0,
-    //     0, 150, 0,
-    //     0, 200, 0,
-    //     0, 250, 0,
-    //     0, 300, 0,
-    //     0, 350, 0,
-    //     0, 400, 0,
-    //     0, 450, 0,
-    //     0, 500, 0,
-    //     0, 550, 0,
-    //     0, 600, 0,
-    //     0, 650, 0,
-    //     0, 700, 0,
-    //     0, 750, 0
-    // ]
-    // const positionKF = new THREE.VectorKeyframeTrack('.position', times, values);
-    // const clip = new THREE.AnimationClip('Dev', 8, [positionKF])
-    // mixer = new THREE.AnimationMixer(dev)
-
-    // const clipAction = mixer.clipAction(clip)
-    // clipAction.play()
-
-    exportUSDZ();
+    const params = {
+        exportUSDZ: exportUSDZ
+    };
+    const gui = new GUI();
+    gui.add(params, 'exportUSDZ').name('Export USDZ');
+    gui.open();
+    prepUSDZ();
     // exportGLB(clip);
     renderer.setAnimationLoop(animate);
 })
@@ -103,7 +83,7 @@ function animate() {
 }
 
 
-export function exportUSDZ(clip) {
+export function prepUSDZ(clip) {
     const exporter = new USDZExporter();
     exporter.parse(
         scene.getObjectByName('export'),
@@ -118,26 +98,34 @@ export function exportUSDZ(clip) {
     )
 }
 
-function exportGLB(clip) {
-  const exporter = new GLTFExporter();
-  exporter.parse(
-    scene,
-    function (result) {
-        saveArrayBuffer(result, 'scene.glb');
+function exportUSDZ() {
 
-    },
-    function (err) {
-        console.log(err)
-    },
-    { 
-        binary: true,
-        animations: [clip]
-     }
-  );
+    const link = document.getElementById('link');
+    link.click();
+
+}
+
+
+function exportGLB(clip) {
+    const exporter = new GLTFExporter();
+    exporter.parse(
+        scene,
+        function (result) {
+            saveArrayBuffer(result, 'scene.glb');
+
+        },
+        function (err) {
+            console.log(err)
+        },
+        {
+            binary: true,
+            animations: [clip]
+        }
+    );
 }
 
 function saveArrayBuffer(buffer, filename) {
-  save(new Blob([buffer], { type: 'application/octet-stream' }), filename);
+    save(new Blob([buffer], { type: 'application/octet-stream' }), filename);
 }
 
 function save(blob, filename) {
@@ -145,7 +133,7 @@ function save(blob, filename) {
     link.download = 'scene.glb'
     link.href = URL.createObjectURL(blob);
 
-  // URL.revokeObjectURL( url ); breaks Firefox...
+    // URL.revokeObjectURL( url ); breaks Firefox...
 }
 
 export function createFacetLines(data, initialPosition, gridConfig) {
