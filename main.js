@@ -66,11 +66,11 @@ fontLoader.load('./Roboto_Regular.json', function (font) {
         exportUSDZ: exportUSDZ
     };
     const gui = new GUI();
-    gui.add(params, 'exportUSDZ').name('Export USDZ v2');
+    gui.add(params, 'exportUSDZ').name('Export USDZ v3');
     gui.open();
-    prepUSDZ();
     // exportGLB(clip);
     renderer.setAnimationLoop(animate);
+    prepUSDZ();
 })
 
 function animate() {
