@@ -62,30 +62,30 @@ fontLoader.load('./Roboto_Regular.json', function (font) {
     renderGrid()
 
     // test animation clip
-    const times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    const values = [
-        0, 0, 0,
-        0, 50, 0,
-        0, 100, 0,
-        0, 150, 0,
-        0, 200, 0,
-        0, 250, 0,
-        0, 300, 0,
-        0, 350, 0,
-        0, 400, 0,
-        0, 450, 0,
-        0, 500, 0,
-        0, 550, 0,
-        0, 600, 0,
-        0, 650, 0,
-        0, 700, 0,
-        0, 750, 0
-    ]
-    const positionKF = new THREE.VectorKeyframeTrack('.position', times, values);
-    const clip = new THREE.AnimationClip('Dev', 8, [positionKF])
-    mixer = new THREE.AnimationMixer(dev)
+    // const times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    // const values = [
+    //     0, 0, 0,
+    //     0, 50, 0,
+    //     0, 100, 0,
+    //     0, 150, 0,
+    //     0, 200, 0,
+    //     0, 250, 0,
+    //     0, 300, 0,
+    //     0, 350, 0,
+    //     0, 400, 0,
+    //     0, 450, 0,
+    //     0, 500, 0,
+    //     0, 550, 0,
+    //     0, 600, 0,
+    //     0, 650, 0,
+    //     0, 700, 0,
+    //     0, 750, 0
+    // ]
+    // const positionKF = new THREE.VectorKeyframeTrack('.position', times, values);
+    // const clip = new THREE.AnimationClip('Dev', 8, [positionKF])
+    // mixer = new THREE.AnimationMixer(dev)
 
-    const clipAction = mixer.clipAction(clip)
+    // const clipAction = mixer.clipAction(clip)
     // clipAction.play()
 
     exportUSDZ();
@@ -104,7 +104,7 @@ function animate() {
 
 
 export function exportUSDZ(clip) {
-    const exporter = new GLTFExporter();
+    const exporter = new USDZExporter();
     exporter.parse(
         scene.getObjectByName('export'),
         (arraybuffer) => {
