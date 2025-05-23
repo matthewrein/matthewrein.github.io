@@ -74,11 +74,17 @@ fontLoader.load('./Roboto_Regular.json', function (font) {
 
     renderGrid()
 
+    const shadowMesh = createSpotShadowMesh();
+    shadowMesh.position.y = - 1.1;
+    shadowMesh.position.z = - 0.25;
+    shadowMesh.scale.setScalar( 2 );
+    scene.add( shadowMesh );
+
     const params = {
         exportUSDZ: exportUSDZ
     };
     const gui = new GUI();
-    gui.add(params, 'exportUSDZ').name('Export USDZ v8');
+    gui.add(params, 'exportUSDZ').name('Export USDZ v9');
     gui.open();
     // exportGLB(clip);
     renderer.setAnimationLoop(animate);
