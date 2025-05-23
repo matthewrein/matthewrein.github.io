@@ -110,7 +110,7 @@ export function exportUSDZ(clip) {
         (arraybuffer) => {
             const blob = new Blob([arraybuffer], { type: 'application/octet-stream' });
             const link = document.getElementById('link');
-            link.download = 'obs_chart.gltf'
+            link.download = 'obs_chart.usdz'
             link.href = URL.createObjectURL(blob);
         },
         (err) => { console.log(err) },
