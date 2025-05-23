@@ -41,7 +41,7 @@ const DEFAULT_CONFIG = {
 }
 
 
-fontLoader.load('./Roboto_Regular.json', function (font) {
+fontLoader.load('./assets/Roboto_Regular.json', function (font) {
     const group = new THREE.Group();
     group.name = 'export'
 
