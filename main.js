@@ -66,7 +66,7 @@ fontLoader.load('./Roboto_Regular.json', function (font) {
         exportUSDZ: exportUSDZ
     };
     const gui = new GUI();
-    gui.add(params, 'exportUSDZ').name('Export USDZ v3');
+    gui.add(params, 'exportUSDZ').name('Export USDZ v4');
     gui.open();
     // exportGLB(clip);
     renderer.setAnimationLoop(animate);
@@ -83,19 +83,13 @@ function animate() {
 }
 
 
-export function prepUSDZ(clip) {
+export async function prepUSDZ(clip) {
     const exporter = new USDZExporter();
-    exporter.parse(
-        scene,
-        (arraybuffer) => {
-            const blob = new Blob([arraybuffer], { type: 'application/octet-stream' });
-            const link = document.getElementById('link');
-            link.download = 'asset.usdz'
-            link.href = URL.createObjectURL(blob);
-        },
-        (err) => { console.log(err) },
-        // {animations: [clip]}
-    )
+    const arraybuffer = await exporter.parseAsync( gltf.scene );
+    const blob = new Blob( [ arraybuffer ], { type: 'application/octet-stream' } );
+
+    const link = document.getElementById( 'link' );
+    link.href = URL.createObjectURL( blob );
 }
 
 function exportUSDZ() {
