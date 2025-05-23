@@ -78,7 +78,7 @@ fontLoader.load('./Roboto_Regular.json', function (font) {
         exportUSDZ: exportUSDZ
     };
     const gui = new GUI();
-    gui.add(params, 'exportUSDZ').name('Export USDZ v7');
+    gui.add(params, 'exportUSDZ').name('Export USDZ v8');
     gui.open();
     // exportGLB(clip);
     renderer.setAnimationLoop(animate);
