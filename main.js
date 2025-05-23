@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { USDZExporter } from 'three/examples/jsm/exporters/USDZExporter.js'
 import { FACETS } from './data';
@@ -12,16 +13,27 @@ const NINTY_DEGREES = THREE.MathUtils.degToRad(90);
 const ANGLE = 30
 
 
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+const renderer = new THREE.WebGLRenderer( { antialias: true } );
+renderer.setPixelRatio( window.devicePixelRatio );
+renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild( renderer.domElement );
+
+
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
 camera.position.set(500, 500, 500);
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 250, 0)
 controls.update();
+
 const clock = new THREE.Clock();
 const scene = new THREE.Scene();
+
+const pmremGenerator = new THREE.PMREMGenerator( renderer );
+scene.background = new THREE.Color( 0xf0f0f0 );
+scene.environment = pmremGenerator.fromScene( new RoomEnvironment(), 0.04 ).texture;
+
 const fontLoader = new FontLoader();
 let mixer;
 const facets = FACETS;
@@ -66,7 +78,7 @@ fontLoader.load('./Roboto_Regular.json', function (font) {
         exportUSDZ: exportUSDZ
     };
     const gui = new GUI();
-    gui.add(params, 'exportUSDZ').name('Export USDZ v6');
+    gui.add(params, 'exportUSDZ').name('Export USDZ v7');
     gui.open();
     // exportGLB(clip);
     renderer.setAnimationLoop(animate);
