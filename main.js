@@ -71,6 +71,10 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const borders = new THREE.Group();
         borders.name = 'borders';
 
+        // Collect all boundary and fill geometries globally
+        const highlightedBoundaryGeometries = [];
+        const normalBoundaryGeometries = [];
+        const allFillGeometries = [];
 
         for (let i = 0; i < data.features.length; i++) {
             const countryNmae = data.features[i].properties.name;
@@ -82,6 +86,19 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             }
         }
 
+        // After all boundaries and fills are collected, merge and add to borders group
+        if (normalBoundaryGeometries.length > 0) {
+            const mergedNormal = BufferGeometryUtils.mergeGeometries(normalBoundaryGeometries, false);
+            borders.add(new THREE.Mesh(mergedNormal, new THREE.MeshStandardMaterial({ color: 0x6f6f6f, side: THREE.FrontSide })));
+        }
+        if (highlightedBoundaryGeometries.length > 0) {
+            const mergedHighlighted = BufferGeometryUtils.mergeGeometries(highlightedBoundaryGeometries, false);
+            borders.add(new THREE.Mesh(mergedHighlighted, new THREE.MeshStandardMaterial({ color: 0x006f00, side: THREE.FrontSide })));
+        }
+        if (allFillGeometries.length > 0) {
+            const mergedFills = BufferGeometryUtils.mergeGeometries(allFillGeometries, false);
+            borders.add(new THREE.Mesh(mergedFills, new THREE.MeshStandardMaterial({ color: 0x003f00, side: THREE.FrontSide, transparent: true, opacity: 0.6, depthWrite: false, depthTest: true })));
+        }
 
         group.add(borders);
         scene.add(group);
@@ -153,51 +170,47 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
 
         function drawBoundary(polygons, isHighlighted) {
-            const color = isHighlighted ? 0x006f00 : 0x6f6f6f; // Red for highlighted countries, green for others
-            const thickness = isHighlighted ? 0.1 : 0.05; // Thicker for highlighted countries, thinner for others
-
-            const boundaries = new THREE.Group();
-            const fills = new THREE.Group();
+            const thickness = isHighlighted ? 0.1 : 0.05;
             polygons.forEach(polygon => {
                 polygon.forEach(ring => {
+                    // Skip small islands (rings with too few points)
+                    if (ring.length < 100) return;
                     const [points, flatCoords] = generatePointsAndFlatCoords(ring, isHighlighted);
                     const curve = new THREE.CatmullRomCurve3([
                         ...points,
-                        points[0] // Close the loop
+                        points[0]
                     ]);
                     curve.closed = true;
 
-                    // // Create tube geometry around the curve
-                    // Create a plane that 
+                    const minSegments = 32;
+                    const maxSegments = 256;
+                    const segments = Math.min(maxSegments, Math.max(minSegments, Math.round(points.length * 4)));
                     const tubeGeometry = new THREE.TubeGeometry(
                         curve,
-                        Math.round(points.length / 4),
+                        segments,
                         thickness,
                         2,
-                        true // closed
+                        true
                     );
 
-                    const tubeMaterial = new THREE.MeshStandardMaterial({
-                        color: color,
-                        side: THREE.FrontSide,
-                    });
-
-                    const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-                    boundaries.add(tube);
+                    // Only add valid geometries
+                    if (tubeGeometry && tubeGeometry.index && tubeGeometry.getAttribute('position').count > 0) {
+                        if (isHighlighted) {
+                            highlightedBoundaryGeometries.push(tubeGeometry);
+                        } else {
+                            normalBoundaryGeometries.push(tubeGeometry);
+                        }
+                    }
 
                     if (isHighlighted) {
                         const fillMesh = generateFillMesh(points, flatCoords);
-                        fillMesh.position.set(0, 0, 0);
-                        // console.log(fillMesh);
-                        fills.add(fillMesh);
+                        if (fillMesh.geometry && fillMesh.geometry.index && fillMesh.geometry.getAttribute('position').count > 0) {
+                            allFillGeometries.push(fillMesh.geometry);
+                        }
                     }
-
-                });
+               });
 
             })
-            const result = BufferGeometryUtils.mergeGeometries(boundaries.children.map(c => c.geometry), false);
-            borders.add(new THREE.Mesh(result, new THREE.MeshStandardMaterial({ color: color, side: THREE.FrontSide })));
-            borders.add(fills);
         }
 
         function generatePointsAndFlatCoords(ring, isHighlighted) {
