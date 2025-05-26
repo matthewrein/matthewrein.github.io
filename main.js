@@ -5,6 +5,22 @@ import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { USDZExporter } from 'three/examples/jsm/exporters/USDZExporter.js'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+import { thickness } from 'three/tsl';
+
+const highlightedCountries = [
+    'United States of America',
+    'Canada',
+    'Mexico',
+    'Brazil',
+    'Argentina',
+    'United Kingdom',
+    'France',
+    'Germany',
+    'Russia',
+    'China',
+    'India',
+    'Australia'
+];
 
 fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
     .then(async (response) => {
@@ -48,7 +64,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const params = {
             exportUSDZ: exportUSDZ
         };
-        gui.add(params, 'exportUSDZ').name('Export USDZ');
+        gui.add(params, 'exportUSDZ').name('Export USDZ v2');
         gui.open();
 
         //load geojson data from file
@@ -58,12 +74,15 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         borders.name = 'borders';
 
 
-        console.log(data.features);
         for (let i = 0; i < data.features.length; i++) {
+            const countryNmae = data.features[i].properties.name;
+            const isHighlighted = highlightedCountries.includes(countryNmae);
+            const color = isHighlighted ? 0x006f00 : 0x6f6f6f; // Red for highlighted countries, green for others
+            const thickness = isHighlighted ? 0.2 : 0.1; // Thicker for highlighted countries, thinner for others
             if (data.features[i].geometry.type === 'Polygon') {
-                drawBoundary([data.features[i].geometry.coordinates]);
+                drawBoundary([data.features[i].geometry.coordinates], color, thickness);
             } else if (data.features[i].geometry.type === 'MultiPolygon') {
-                drawBoundary(data.features[i].geometry.coordinates);
+                drawBoundary(data.features[i].geometry.coordinates, color,  thickness);
             }
         }
 
@@ -137,7 +156,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         });
 
 
-        function drawBoundary(polygons) {
+        function drawBoundary(polygons, color = 0xffffff, thickness = 0.1) {
             const boudnaries = new THREE.Group();
             polygons.forEach(polygon => {
                 polygon.forEach(ring => {
@@ -153,13 +172,13 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                     const tubeGeometry = new THREE.TubeGeometry(
                         curve,
                         points.length,
-                        0.1,
+                        thickness,
                         2,
                         true // closed
                     );
 
                     const tubeMaterial = new THREE.MeshStandardMaterial({
-                        color: 0x0000ff,
+                        color: color,
                         side: THREE.FrontSide,
                     });
 
@@ -169,7 +188,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                 });
             })
             const result = BufferGeometryUtils.mergeGeometries(boudnaries.children.map(c => c.geometry), false);
-            borders.add(new THREE.Mesh(result, new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.FrontSide })));
+            borders.add(new THREE.Mesh(result, new THREE.MeshStandardMaterial({ color: color, side: THREE.FrontSide })));
         }
 
         function generatePointsAndFlatCoords(ring) {
