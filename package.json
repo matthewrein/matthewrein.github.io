@@ -4,6 +4,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "earcut": "^3.0.1",
     "three": "^0.176.0"
   },
   "devDependencies": {
