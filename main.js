@@ -49,8 +49,19 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
         const color = 0xffffff; // Soft gray color for the moon
         const intensity = 10;
-        const light = new THREE.AmbientLight(color, intensity);
-        group.add(light);
+        // Use both AmbientLight (for live scene) and DirectionalLight (for USDZ export compatibility)
+        const ambientLight = new THREE.AmbientLight(color, intensity * 0.2); // softer ambient for subtle fill
+        // Add multiple directional lights for even globe lighting
+        const dirLight1 = new THREE.DirectionalLight(color, intensity * 0.7);
+        dirLight1.position.set(100, 100, 100);
+        group.add(dirLight1);
+        const dirLight2 = new THREE.DirectionalLight(color, intensity * 0.7);
+        dirLight2.position.set(-100, 100, -100);
+        group.add(dirLight2);
+        const dirLight3 = new THREE.DirectionalLight(color, intensity * 0.7);
+        dirLight3.position.set(0, -100, 100);
+        group.add(dirLight3);
+        group.add(ambientLight);
         const shadowMesh = createSpotShadowMesh();
         shadowMesh.position.y = - 1.1;
         shadowMesh.position.z = - 0.25;
@@ -62,7 +73,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const params = {
             exportUSDZ: exportUSDZ
         };
-        gui.add(params, 'exportUSDZ').name('Export USDZ v7');
+        gui.add(params, 'exportUSDZ').name('Export USDZ v8');
         gui.open();
 
         //load geojson data from file
