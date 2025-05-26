@@ -4,6 +4,7 @@ import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { USDZExporter } from 'three/examples/jsm/exporters/USDZExporter.js'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
     .then(async (response) => {
@@ -137,6 +138,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
 
         function drawBoundary(polygons) {
+            const boudnaries = new THREE.Group();
             polygons.forEach(polygon => {
                 polygon.forEach(ring => {
                     const [points,] = generatePointsAndFlatCoords(ring);
@@ -147,11 +149,12 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                     curve.closed = true;
 
                     // // Create tube geometry around the curve
+                    // Create a plane that 
                     const tubeGeometry = new THREE.TubeGeometry(
                         curve,
                         points.length,
-                        0.05,
-                        4,
+                        0.1,
+                        2,
                         true // closed
                     );
 
@@ -161,10 +164,12 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                     });
 
                     const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-                    borders.add(tube);
+                    boudnaries.add(tube);
 
                 });
             })
+            const result = BufferGeometryUtils.mergeGeometries(boudnaries.children.map(c => c.geometry), false);
+            borders.add(new THREE.Mesh(result, new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.FrontSide })));
         }
 
         function generatePointsAndFlatCoords(ring) {
