@@ -62,7 +62,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const params = {
             exportUSDZ: exportUSDZ
         };
-        gui.add(params, 'exportUSDZ').name('Export USDZ v5');
+        gui.add(params, 'exportUSDZ').name('Export USDZ v6');
         gui.open();
 
         //load geojson data from file
@@ -171,7 +171,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                     // Create a plane that 
                     const tubeGeometry = new THREE.TubeGeometry(
                         curve,
-                        points.length,
+                        Math.round(points.length / 4),
                         thickness,
                         2,
                         true // closed
