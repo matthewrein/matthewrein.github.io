@@ -62,7 +62,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const params = {
             exportUSDZ: exportUSDZ
         };
-        gui.add(params, 'exportUSDZ').name('Export USDZ v6');
+        gui.add(params, 'exportUSDZ').name('Export USDZ v7');
         gui.open();
 
         //load geojson data from file
@@ -184,8 +184,8 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
                     const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
                     boundaries.add(tube);
-                    
-                    if(isHighlighted) {
+
+                    if (isHighlighted) {
                         const fillMesh = generateFillMesh(points, flatCoords);
                         fillMesh.position.set(0, 0, 0);
                         // console.log(fillMesh);
@@ -219,10 +219,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
             return [points, flatCoords];
         }
-
-
-
-        function generateFillMesh(points, flatCoords){
+        function generateFillMesh(points, flatCoords) {
             const scale = 50.4;
 
             // Ensure boundary points are at correct height
@@ -231,73 +228,48 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             });
 
             // Create initial geometry from boundary points
-            const vertices = new Float32Array(boundaryPoints.length * 3);
-            boundaryPoints.forEach((point, i) => {
-                vertices[i * 3] = point.x;
-                vertices[i * 3 + 1] = point.y;
-                vertices[i * 3 + 2] = point.z;
-            });
-
-            // Create triangulation
+            const vertices = boundaryPoints.map(p => p.clone());
             const triangles = earcut(flatCoords, null, 2);
 
-            // Create geometry
-            const fillGeometry = new THREE.BufferGeometry();
-            fillGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-            fillGeometry.setIndex(triangles);
-
-            // Subdivide manually by adding midpoints
-            const positions = fillGeometry.attributes.position.array;
-            const indices = fillGeometry.index.array;
-            const newPositions = [];
-            const newIndices = [];
-
-            // Process each triangle
-            for (let i = 0; i < indices.length; i += 3) {
-                const a = indices[i] * 3;
-                const b = indices[i + 1] * 3;
-                const c = indices[i + 2] * 3;
-
-                // Original vertices
-                const v1 = new THREE.Vector3(positions[a], positions[a + 1], positions[a + 2]);
-                const v2 = new THREE.Vector3(positions[b], positions[b + 1], positions[b + 2]);
-                const v3 = new THREE.Vector3(positions[c], positions[c + 1], positions[c + 2]);
-
-                // Calculate midpoints
-                const v12 = v1.clone().add(v2).multiplyScalar(0.5).normalize().multiplyScalar(scale);
-                const v23 = v2.clone().add(v3).multiplyScalar(0.5).normalize().multiplyScalar(scale);
-                const v31 = v3.clone().add(v1).multiplyScalar(0.5).normalize().multiplyScalar(scale);
-
-                // Add all vertices
-                const idx = newPositions.length / 3;
-                newPositions.push(
-                    v1.x, v1.y, v1.z,
-                    v2.x, v2.y, v2.z,
-                    v3.x, v3.y, v3.z,
-                    v12.x, v12.y, v12.z,
-                    v23.x, v23.y, v23.z,
-                    v31.x, v31.y, v31.z
-                );
-
-                // Create four triangles
-                newIndices.push(
-                    idx, idx + 3, idx + 5,     // v1, v12, v31
-                    idx + 3, idx + 1, idx + 4, // v12, v2, v23
-                    idx + 5, idx + 4, idx + 2, // v31, v23, v3
-                    idx + 3, idx + 4, idx + 5  // v12, v23, v31
-                );
+            // Subdivision: for each triangle, add midpoints and create 4 new triangles
+            const midpointCache = {};
+            function getMidpointIndex(i1, i2) {
+                const key = i1 < i2 ? `${i1}_${i2}` : `${i2}_${i1}`;
+                if (midpointCache[key] !== undefined) return midpointCache[key];
+                const mid = vertices[i1].clone().add(vertices[i2]).multiplyScalar(0.5).normalize().multiplyScalar(scale);
+                vertices.push(mid);
+                midpointCache[key] = vertices.length - 1;
+                return midpointCache[key];
             }
 
-            const subdivGeometry = new THREE.BufferGeometry();
-            subdivGeometry.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
-            subdivGeometry.setIndex(newIndices);
-            subdivGeometry.computeVertexNormals();
+            const newIndices = [];
+            for (let i = 0; i < triangles.length; i += 3) {
+                const a = triangles[i];
+                const b = triangles[i + 1];
+                const c = triangles[i + 2];
+                const ab = getMidpointIndex(a, b);
+                const bc = getMidpointIndex(b, c);
+                const ca = getMidpointIndex(c, a);
+                // 4 new triangles
+                newIndices.push(a, ab, ca);
+                newIndices.push(b, bc, ab);
+                newIndices.push(c, ca, bc);
+                newIndices.push(ab, bc, ca);
+            }
 
-            // Create a group to hold both the fill mesh and debug wireframe
-            const group = new THREE.Group();
-            group.userData = { isHighlightFill: true };
+            // Convert vertices to Float32Array
+            const flatVerts = new Float32Array(vertices.length * 3);
+            vertices.forEach((v, i) => {
+                flatVerts[i * 3] = v.x;
+                flatVerts[i * 3 + 1] = v.y;
+                flatVerts[i * 3 + 2] = v.z;
+            });
 
-            // Create the fill mesh
+            const fillGeometry = new THREE.BufferGeometry();
+            fillGeometry.setAttribute('position', new THREE.BufferAttribute(flatVerts, 3));
+            fillGeometry.setIndex(newIndices);
+            fillGeometry.computeVertexNormals();
+
             const fillMaterial = new THREE.MeshStandardMaterial({
                 color: 0x003f00,
                 side: THREE.FrontSide,
@@ -307,13 +279,15 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                 depthTest: true
             });
 
-            const fillMesh = new THREE.Mesh(subdivGeometry, fillMaterial);
+            const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
             fillMesh.renderOrder = -1;
-            group.add(fillMesh);
+            fillMesh.userData = { isHighlightFill: true };
+
+            return fillMesh;
+        }
 
 
-            return group;
-        };
+
     });
 
 
