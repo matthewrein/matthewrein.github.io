@@ -1,105 +1,87 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { USDZExporter } from 'three/examples/jsm/exporters/USDZExporter.js'
-import { FACETS } from './data';
-import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-const FACETS_NAME = 'facets'
-const NINTY_DEGREES = THREE.MathUtils.degToRad(90);
-const ANGLE = 30
 
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
+const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
 document.body.appendChild(renderer.domElement);
-
-
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
-camera.position.set(500, 500, 500);
-
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+camera.position.set(100, 100, 100);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 250, 0)
+controls.target.set(0, 0, 0)
 controls.update();
-
 const clock = new THREE.Clock();
 const scene = new THREE.Scene();
 
-const pmremGenerator = new THREE.PMREMGenerator(renderer);
-scene.background = new THREE.Color(0xf0f0f0);
-scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-const fontLoader = new FontLoader();
-let mixer;
-const facets = FACETS;
 
-const DEFAULT_CONFIG = {
-    scale: 1000,
-    showGridX: true,
-    showGridY: true,
-    showGridZ: true,
-    showLabelX: true,
-    showLabelY: true,
-    showLabelZ: true,
-    resolutionX: 10,
-    resolutionY: 10,
-    resolutionZ: 10,
-    chartOffset: 250,
-    spehereSize: 5
+const group = new THREE.Group();
+group.name = 'export';
+
+
+const geometry = new THREE.SphereGeometry(50, 50, 50);
+const oceanColor = 0x000000; // Blue color for the ocean
+const material = new THREE.MeshStandardMaterial({ color: oceanColor });
+const sphere = new THREE.Mesh(geometry, material);
+group.add(sphere);
+
+const color = 0xffffff; // Soft gray color for the moon
+const intensity = 10;
+const light = new THREE.AmbientLight(color, intensity);
+group.add(light);
+const shadowMesh = createSpotShadowMesh();
+shadowMesh.position.y = - 1.1;
+shadowMesh.position.z = - 0.25;
+shadowMesh.scale.setScalar(2);
+group.add(shadowMesh);
+
+
+const gui = new GUI();
+const params = {
+    exportUSDZ: exportUSDZ
+};
+gui.add(params, 'exportUSDZ').name('Export USDZ');
+gui.open();
+
+//load geojson data from file
+const data = await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+    .then(response => {
+        return response.json()
+    });
+
+const borders = new THREE.Group();
+borders.name = 'borders';
+
+
+console.log(data.features);
+for (let i = 0; i < data.features.length; i++) {
+    if (data.features[i].geometry.type === 'Polygon') {
+        drawBoundary([data.features[i].geometry.coordinates]);
+    } else if (data.features[i].geometry.type === 'MultiPolygon') {
+        drawBoundary(data.features[i].geometry.coordinates);
+    }
 }
 
 
-fontLoader.load('./Roboto_Regular.json', function (font) {
-    const group = new THREE.Group();
-    group.name = 'export'
+group.add(borders);
+scene.add(group);
 
-    const dev = createSphere(new THREE.Vector3(0, 0, 0), 0xFFFFFF, 8)
-    dev.name = 'dev'
-    group.add(dev)
 
-    const facetLines = createFacetLines(facets, new THREE.Vector3(0, 0, 0), DEFAULT_CONFIG)
-    group.add(facetLines)
+renderer.setAnimationLoop(animate);
+prepUSDZ();
 
-    group.updateWorldMatrix(false, true)
-    const color = 0x3b3b3b3;
-    const intensity = 2;
-    const light = new THREE.DirectionalLight(color, intensity);
-    group.add(light);
-    scene.add(group)
 
-    renderGrid()
-
-    const shadowMesh = createSpotShadowMesh();
-    shadowMesh.position.y = - 1.1;
-    shadowMesh.position.z = - 0.25;
-    shadowMesh.scale.setScalar(2);
-    scene.add(shadowMesh);
-
-    const params = {
-        exportUSDZ: exportUSDZ
-    };
-    const gui = new GUI();
-    gui.add(params, 'exportUSDZ').name('Export USDZ v10');
-    gui.open();
-    // exportGLB(clip);
-    renderer.setAnimationLoop(animate);
-    prepUSDZ();
-})
 
 function animate() {
     var delta = clock.getDelta();
-    if (mixer) {
-        // mixer.update(delta);
-    }
+
     controls.update(delta);
     renderer.render(scene, camera);
 }
-
 
 export async function prepUSDZ(clip) {
     const exporter = new USDZExporter();
@@ -120,136 +102,6 @@ function exportUSDZ() {
 
 }
 
-
-function exportGLB(clip) {
-    const exporter = new GLTFExporter();
-    exporter.parse(
-        scene,
-        function (result) {
-            saveArrayBuffer(result, 'scene.glb');
-
-        },
-        function (err) {
-            console.log(err)
-        },
-        {
-            binary: true,
-            animations: [clip]
-        }
-    );
-}
-
-function saveArrayBuffer(buffer, filename) {
-    save(new Blob([buffer], { type: 'application/octet-stream' }), filename);
-}
-
-function save(blob, filename) {
-    const link = document.getElementById('link');
-    link.download = 'scene.glb'
-    link.href = URL.createObjectURL(blob);
-
-    // URL.revokeObjectURL( url ); breaks Firefox...
-}
-
-export function createFacetLines(data, initialPosition, gridConfig) {
-    const {
-        scale,
-        spehereSize
-    } = gridConfig
-
-
-    const facets = new THREE.Group();
-    facets.name = FACETS_NAME;
-
-    for (let i = 0; i < data.length; i++) {
-        const facet = new THREE.Group();
-        facet.name = data[i].name;
-
-        data[i].spherePositions = []
-        const color = new THREE.Color(0xffffff);
-        color.setHex(Math.random() * 0xffffff);
-        data[i].color = color;
-
-        for (let h = 0; h < data[i].horizontal.length; h++) {
-
-            // CALCULATE POSITION ELEMENTS
-            const position = new THREE.Vector3();
-            const radius = data[i].horizontal[h] * 50;
-            const theta = THREE.MathUtils.degToRad(i * ANGLE)
-            const height = data[i].vertical[h] * 100
-            // BUILD POSITON
-            position.setFromSphericalCoords(radius, NINTY_DEGREES, theta)
-
-            // DRAW GEOMETRY (TEMP)
-            const sphere = createSphere(position, data[i].color);
-            // NEED to figure out how to update sphere y
-            sphere.translateY(height)
-
-            // const line = createLine(sphere.position, initialPosition, data[i].color) // will need to be redrawn each frame?
-
-            data[i].spherePositions.push(sphere.position)
-
-            facet.add(sphere)
-        }
-
-        const sphere = createSphere(data[i].spherePositions[0], data[i].color);
-        const splinePoints = generateSplinePoints(data[i].spherePositions);
-        const line = createSpline(splinePoints, data[i].color);
-        facet.add(sphere)
-        facet.add(line)
-        facets.add(facet)
-    }
-    return facets;
-}
-
-function createSphere(position, color, size = 2) {
-    const geometry = new THREE.SphereGeometry(size, 50, 50);
-    const material = new THREE.MeshStandardMaterial({ color: color });
-    const sphere = new THREE.Mesh(geometry, material);
-    sphere.translateX(position.x);
-    sphere.translateY(position.y);
-    sphere.translateZ(position.z);
-    return sphere
-}
-
-
-
-function generateSplinePoints(points) {
-    const splineCurve = new THREE.CatmullRomCurve3(points)
-    const resolution = 50;
-    const splinePoints = []
-    for (let i = 0; i <= resolution; i++) {
-        const target = i / resolution;
-        splinePoints.push(splineCurve.getPoint(target))
-    }
-    return splinePoints
-}
-
-function createSpline(points, color) {
-    const curve = new THREE.CatmullRomCurve3(points);
-    const geometry = new THREE.TubeGeometry(curve, points.length * 5, 1, 8, false);
-    const material = new THREE.MeshStandardMaterial({ color: color });
-    const line = new THREE.Mesh(geometry, material);
-    return line
-}
-
-function renderGrid() {
-    const size = 500;
-    const divisions = 10;
-    const xyPlane = new THREE.GridHelper(size, divisions, 0x000077, 0x3b3b3b);
-    const yzPlane = new THREE.GridHelper(size, divisions, 0x007700, 0x3b3b3b);
-    const xzPlane = new THREE.GridHelper(size, divisions, 0x770000, 0x3b3b3b);
-    yzPlane.rotateOnAxis(new THREE.Vector3(0, 0, 1), THREE.MathUtils.degToRad(90))
-    yzPlane.translateY(250)
-    yzPlane.translateX(250)
-    xzPlane.rotateOnAxis(new THREE.Vector3(1, 0, 0), THREE.MathUtils.degToRad(90))
-    xzPlane.translateZ(-250)
-    xzPlane.translateY(-250)
-    scene.add(xyPlane);
-    scene.add(yzPlane);
-    scene.add(xzPlane);
-}
-
 function createSpotShadowMesh() {
 
     const canvas = document.createElement('canvas');
@@ -267,7 +119,7 @@ function createSpotShadowMesh() {
     const shadowTexture = new THREE.CanvasTexture(canvas);
 
     const geometry = new THREE.PlaneGeometry();
-    const material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshStandardMaterial({
         map: shadowTexture, blending: THREE.MultiplyBlending, toneMapped: false
     });
 
@@ -277,3 +129,60 @@ function createSpotShadowMesh() {
     return mesh;
 
 }
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+
+function drawBoundary(polygons) {
+    polygons.forEach(polygon => {
+        polygon.forEach(ring => {
+            const [points,] = generatePointsAndFlatCoords(ring);
+            const curve = new THREE.CatmullRomCurve3([
+                    ...points,
+                    points[0] // Close the loop
+            ]);
+            curve.closed = true;
+
+            // // Create tube geometry around the curve
+            const tubeGeometry = new THREE.TubeGeometry(
+                curve,
+                points.length,
+                0.05,
+                4,
+                true // closed
+            );
+
+            const tubeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0000ff,
+                side: THREE.FrontSide,
+            });
+
+            const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+            borders.add(tube);
+
+        });
+    })
+}
+
+function generatePointsAndFlatCoords(ring){
+    const points = [];  // Initialize points array  
+    const flatCoords = []; // For earcut triangulation
+    // Convert coordinates to 3D points
+    ring.forEach(coord => {
+        const lat = coord[1] * (Math.PI / 180);
+        const lon = (coord[0] + 180) * (Math.PI / 180);
+        const x = Math.cos(lat) * Math.sin(lon);
+        const y = Math.sin(lat);
+        const z = Math.cos(lat) * Math.cos(lon);
+        const position = new THREE.Vector3(x, y, z).normalize().multiplyScalar(50); // Scale to sphere radius
+        points.push(position);
+        flatCoords.push(lon, lat);
+
+    });
+
+    return [points, flatCoords];
+}
+
