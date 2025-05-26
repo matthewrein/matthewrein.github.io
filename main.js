@@ -64,7 +64,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const params = {
             exportUSDZ: exportUSDZ
         };
-        gui.add(params, 'exportUSDZ').name('Export USDZ v2');
+        gui.add(params, 'exportUSDZ').name('Export USDZ v3');
         gui.open();
 
         //load geojson data from file
@@ -77,12 +77,10 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         for (let i = 0; i < data.features.length; i++) {
             const countryNmae = data.features[i].properties.name;
             const isHighlighted = highlightedCountries.includes(countryNmae);
-            const color = isHighlighted ? 0x006f00 : 0x6f6f6f; // Red for highlighted countries, green for others
-            const thickness = isHighlighted ? 0.2 : 0.1; // Thicker for highlighted countries, thinner for others
             if (data.features[i].geometry.type === 'Polygon') {
-                drawBoundary([data.features[i].geometry.coordinates], color, thickness);
+                drawBoundary([data.features[i].geometry.coordinates], isHighlighted);
             } else if (data.features[i].geometry.type === 'MultiPolygon') {
-                drawBoundary(data.features[i].geometry.coordinates, color,  thickness);
+                drawBoundary(data.features[i].geometry.coordinates, isHighlighted);
             }
         }
 
@@ -156,11 +154,14 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         });
 
 
-        function drawBoundary(polygons, color = 0xffffff, thickness = 0.1) {
+        function drawBoundary(polygons, isHighlighted) {
+            const color = isHighlighted ? 0x006f00 : 0x6f6f6f; // Red for highlighted countries, green for others
+            const thickness = isHighlighted ? 0.1 : 0.05; // Thicker for highlighted countries, thinner for others
+   
             const boudnaries = new THREE.Group();
             polygons.forEach(polygon => {
                 polygon.forEach(ring => {
-                    const [points,] = generatePointsAndFlatCoords(ring);
+                    const [points,] = generatePointsAndFlatCoords(ring, isHighlighted);
                     const curve = new THREE.CatmullRomCurve3([
                         ...points,
                         points[0] // Close the loop
@@ -191,7 +192,8 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             borders.add(new THREE.Mesh(result, new THREE.MeshStandardMaterial({ color: color, side: THREE.FrontSide })));
         }
 
-        function generatePointsAndFlatCoords(ring) {
+        function generatePointsAndFlatCoords(ring, isHighlighted) {
+            const offset = isHighlighted ? 0.1 : 0; // Offset for highlighted countries
             const points = [];  // Initialize points array  
             const flatCoords = []; // For earcut triangulation
             // Convert coordinates to 3D points
@@ -201,7 +203,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                 const x = Math.cos(lat) * Math.sin(lon);
                 const y = Math.sin(lat);
                 const z = Math.cos(lat) * Math.cos(lon);
-                const position = new THREE.Vector3(x, y, z).normalize().multiplyScalar(50); // Scale to sphere radius
+                const position = new THREE.Vector3(x, y, z).normalize().multiplyScalar(50 + offset); // Scale to sphere radius
                 points.push(position);
                 flatCoords.push(lon, lat);
 
