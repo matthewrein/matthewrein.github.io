@@ -49,18 +49,8 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
         const color = 0xffffff; // Soft gray color for the moon
         const intensity = 10;
-        // Use both AmbientLight (for live scene) and DirectionalLight (for USDZ export compatibility)
-        const ambientLight = new THREE.AmbientLight(color, intensity * 0.2); // softer ambient for subtle fill
-        // Add multiple directional lights for even globe lighting
-        const dirLight1 = new THREE.DirectionalLight(color, intensity * 0.7);
-        dirLight1.position.set(100, 100, 100);
-        group.add(dirLight1);
-        const dirLight2 = new THREE.DirectionalLight(color, intensity * 0.7);
-        dirLight2.position.set(-100, 100, -100);
-        group.add(dirLight2);
-        const dirLight3 = new THREE.DirectionalLight(color, intensity * 0.7);
-        dirLight3.position.set(0, -100, 100);
-        group.add(dirLight3);
+        // Use only AmbientLight for both live scene and export
+        const ambientLight = new THREE.AmbientLight(color, intensity);
         group.add(ambientLight);
         const shadowMesh = createSpotShadowMesh();
         shadowMesh.position.y = - 1.1;
@@ -298,7 +288,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                 color: 0x003f00,
                 side: THREE.FrontSide,
                 transparent: true,
-                opacity: 0.6,
+                opacity: 1,
                 depthWrite: false,
                 depthTest: true
             });
