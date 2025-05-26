@@ -42,7 +42,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
 
         const geometry = new THREE.SphereGeometry(50, 50, 50);
-        const oceanColor = 0x000000; // Blue color for the ocean
+        const oceanColor = 0x303030; // Blue color for the ocean
         const material = new THREE.MeshStandardMaterial({ color: oceanColor });
         const sphere = new THREE.Mesh(geometry, material);
         group.add(sphere);
@@ -90,15 +90,24 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         // After all boundaries and fills are collected, merge and add to borders group
         if (normalBoundaryGeometries.length > 0) {
             const mergedNormal = BufferGeometryUtils.mergeGeometries(normalBoundaryGeometries, false);
-            borders.add(new THREE.Mesh(mergedNormal, new THREE.MeshStandardMaterial({ color: 0x6f6f6f, side: THREE.FrontSide })));
+            borders.add(new THREE.Mesh(
+                mergedNormal,
+                new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.FrontSide, metalness: 0.7 })
+            ));
         }
         if (highlightedBoundaryGeometries.length > 0) {
             const mergedHighlighted = BufferGeometryUtils.mergeGeometries(highlightedBoundaryGeometries, false);
-            borders.add(new THREE.Mesh(mergedHighlighted, new THREE.MeshStandardMaterial({ color: 0x006f00, side: THREE.FrontSide })));
+            borders.add(new THREE.Mesh(
+                mergedHighlighted,
+                new THREE.MeshStandardMaterial({ color: 0x00ff00, side: THREE.FrontSide, metalness: 0.7 })
+            ));
         }
         if (allFillGeometries.length > 0) {
             const mergedFills = BufferGeometryUtils.mergeGeometries(allFillGeometries, false);
-            borders.add(new THREE.Mesh(mergedFills, new THREE.MeshStandardMaterial({ color: 0x003f00, side: THREE.FrontSide, transparent: true, opacity: 0.6, depthWrite: false, depthTest: true })));
+            borders.add(new THREE.Mesh(
+                mergedFills,
+                new THREE.MeshStandardMaterial({ color: 0x003f00, side: THREE.FrontSide, metalness: 0.7 })
+            ));
         }
 
         group.add(borders);
@@ -215,7 +224,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         }
 
         function generatePointsAndFlatCoords(ring, isHighlighted) {
-            const offset = isHighlighted ? 0.25 : 0; // Offset for highlighted countries
+            const offset = isHighlighted ? 0.4 : 0; // Offset for highlighted countries
             const points = [];  // Initialize points array  
             const flatCoords = []; // For earcut triangulation
             // Convert coordinates to 3D points
@@ -287,10 +296,8 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             const fillMaterial = new THREE.MeshStandardMaterial({
                 color: 0x003f00,
                 side: THREE.FrontSide,
-                transparent: true,
                 opacity: 1,
-                depthWrite: false,
-                depthTest: true
+                metalness: 0.7
             });
 
             const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
