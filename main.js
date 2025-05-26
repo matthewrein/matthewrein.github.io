@@ -64,7 +64,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const params = {
             exportUSDZ: exportUSDZ
         };
-        gui.add(params, 'exportUSDZ').name('Export USDZ v3');
+        gui.add(params, 'exportUSDZ').name('Export USDZ v4');
         gui.open();
 
         //load geojson data from file
@@ -193,7 +193,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         }
 
         function generatePointsAndFlatCoords(ring, isHighlighted) {
-            const offset = isHighlighted ? 0.1 : 0; // Offset for highlighted countries
+            const offset = isHighlighted ? 0.01 : 0; // Offset for highlighted countries
             const points = [];  // Initialize points array  
             const flatCoords = []; // For earcut triangulation
             // Convert coordinates to 3D points
