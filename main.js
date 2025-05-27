@@ -132,11 +132,11 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             const y = Math.sin(lat);
             const z = Math.cos(lat) * Math.cos(lon);
             // Place sphere so it sticks out halfway through the surface
-            const surfaceRadius = 49;
+            const surfaceRadius = 50;
             const sphereRadius = 1; // diameter = 2 * 1.2 (from geometry)
             const position = new THREE.Vector3(x, y, z).normalize().multiplyScalar(surfaceRadius + sphereRadius / 2);
-            const sphereGeometry = new THREE.SphereGeometry(1.2, 16, 16);
-            const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.7, emissive: 0x00ff00, emissiveIntensity: 1 });
+            const sphereGeometry = new THREE.SphereGeometry(.5, 16, 16);
+            const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.7, emissive: 0x00ff00, emissiveIntensity: 0.5 });
             const citySphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             citySphere.position.copy(position);
             citySphere.name = city.name;
@@ -178,6 +178,9 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
         function animate() {
             var delta = clock.getDelta();
+
+            // Rotate the whole group (scene)
+            group.rotation.y += delta * 0.1; // Adjust speed as needed
 
             controls.update(delta);
             renderer.render(scene, camera);
