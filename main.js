@@ -48,7 +48,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         group.add(sphere);
 
         const color = 0xffffff; // Soft gray color for the moon
-        const intensity = 10;
+        const intensity = 1;
         // Use only AmbientLight for both live scene and export
         const ambientLight = new THREE.AmbientLight(color, intensity);
         group.add(ambientLight);
@@ -99,14 +99,14 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             const mergedHighlighted = BufferGeometryUtils.mergeGeometries(highlightedBoundaryGeometries, false);
             borders.add(new THREE.Mesh(
                 mergedHighlighted,
-                new THREE.MeshStandardMaterial({ color: 0x00ff00, side: THREE.FrontSide, metalness: 0.7 })
+                new THREE.MeshStandardMaterial({ color: 0x00ff00, side: THREE.FrontSide, metalness: 0.8 })
             ));
         }
         if (allFillGeometries.length > 0) {
             const mergedFills = BufferGeometryUtils.mergeGeometries(allFillGeometries, false);
             borders.add(new THREE.Mesh(
                 mergedFills,
-                new THREE.MeshStandardMaterial({ color: 0x003f00, side: THREE.FrontSide, metalness: 0.7 })
+                new THREE.MeshStandardMaterial({ color: 0x00ff00, side: THREE.FrontSide, metalness: 0.5 })
             ));
         }
 
