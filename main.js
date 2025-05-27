@@ -28,14 +28,15 @@ const highlightedCities = [
     { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729 },
     { name: 'Mumbai', lat: 19.0760, lon: 72.8777 },
     { name: 'San Francisco', lat: 37.7749, lon: -122.4194 },
-    { name: 'Austin', lat: 30.2672, lon: -97.7431 }
+    { name: 'Austin', lat: 30.2672, lon: -97.7431 },
+    { name: 'Germany', lat: 51.1657, lon: 10.4515 }
 ];
 
 fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
     .then(async (response) => {
         const data = await response.json()
 
-        const renderer = new THREE.WebGLRenderer();
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
@@ -153,9 +154,10 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             ['Tokyo', 'San Francisco'],
             ['Austin', 'New York'],
             // Germany is not in highlightedCities, so use coordinates
-            [{ name: 'Germany', lat: 51.1657, lon: 10.4515 }, 'New York'],
-            ['Mumbai', { name: 'Germany', lat: 51.1657, lon: 10.4515 }],
-            ['Sydney', 'San Francisco']
+            ['Germany', 'New York'],
+            ['Mumbai', 'Germany'],
+            ['Sydney', 'San Francisco'],
+            ['London', 'New York'],
         ];
 
         arcs.forEach(([from, to]) => {
@@ -239,7 +241,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
 
         function drawBoundary(polygons, isHighlighted) {
-            const thickness = isHighlighted ? 0.1 : 0.05;
+            const thickness = isHighlighted ? 0.15 : 0.075;
             polygons.forEach(polygon => {
                 polygon.forEach(ring => {
                     // Skip small islands (rings with too few points)
@@ -283,7 +285,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         }
 
         function generatePointsAndFlatCoords(ring, isHighlighted) {
-            const offset = isHighlighted ? 0.4 : 0; // Offset for highlighted countries
+            const offset = isHighlighted ? 0.5 : 0; // Offset for highlighted countries
             const points = [];  // Initialize points array  
             const flatCoords = []; // For earcut triangulation
             // Convert coordinates to 3D points
@@ -384,7 +386,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             const lonB = (cityB.lon + 180) * (Math.PI / 180);
 
             // Globe radius
-            const r = 50;
+            const r = 50.5;
             // Start and end points on the globe
             const start = new THREE.Vector3(
                 Math.cos(latA) * Math.sin(lonA),
