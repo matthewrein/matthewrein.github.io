@@ -9,15 +9,14 @@ import earcut from 'earcut';
 
 const highlightedCountries = [
     'United States of America',
-    'Canada',
-    'Mexico',
     'Brazil',
     'Argentina',
     'United Kingdom',
     'France',
     'Germany',
     'India',
-    'Australia'
+    'Australia',
+    'Japan'
 ];
 
 const highlightedCities = [
@@ -27,10 +26,9 @@ const highlightedCities = [
     { name: 'Tokyo', lat: 35.6895, lon: 139.6917 },
     { name: 'Sydney', lat: -33.8688, lon: 151.2093 },
     { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729 },
-    { name: 'Cairo', lat: 30.0444, lon: 31.2357 },
-    { name: 'Moscow', lat: 55.7558, lon: 37.6173 },
-    { name: 'Beijing', lat: 39.9042, lon: 116.4074 },
-    { name: 'Mumbai', lat: 19.0760, lon: 72.8777 }
+    { name: 'Mumbai', lat: 19.0760, lon: 72.8777 },
+    { name: 'San Francisco', lat: 37.7749, lon: -122.4194 },
+    { name: 'Austin', lat: 30.2672, lon: -97.7431 }
 ];
 
 fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
@@ -147,6 +145,30 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         });
         group.add(cityGroup);
 
+        // Define all arcs to be drawn as [from, to]
+        const arcs = [
+            ['Paris', 'New York'],
+            ['Rio de Janeiro', 'New York'],
+            ['San Francisco', 'New York'],
+            ['Tokyo', 'San Francisco'],
+            ['Austin', 'New York'],
+            // Germany is not in highlightedCities, so use coordinates
+            [{ name: 'Germany', lat: 51.1657, lon: 10.4515 }, 'New York'],
+            ['Mumbai', { name: 'Germany', lat: 51.1657, lon: 10.4515 }],
+            ['Sydney', 'San Francisco']
+        ];
+
+        arcs.forEach(([from, to]) => {
+            const fromCity = typeof from === 'string' ? highlightedCities.find(c => c.name === from) : from;
+            const toCity = typeof to === 'string' ? highlightedCities.find(c => c.name === to) : to;
+            if (fromCity && toCity) {
+                const arc = drawArcBetweenCities(
+                    fromCity,
+                    toCity
+                );
+                group.add(arc);
+            }
+        });
 
         renderer.setAnimationLoop(animate);
         prepUSDZ();
@@ -339,6 +361,57 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             fillMesh.userData = { isHighlightFill: true };
 
             return fillMesh;
+        }
+
+        function drawArcBetweenCities(cityA, cityB, options = {}) {
+            // Default options
+            const {
+                color = 0x00ff00, // green
+                thickness = 0.1,
+                height = 4, // lower height for earth-following arc
+                segments = 128,
+                metalness = 0.5,
+                opacity = 0.5 // slightly transparent
+            } = options;
+
+            // Convert lat/lon to radians
+            const latA = cityA.lat * (Math.PI / 180);
+            const lonA = (cityA.lon + 180) * (Math.PI / 180);
+            const latB = cityB.lat * (Math.PI / 180);
+            const lonB = (cityB.lon + 180) * (Math.PI / 180);
+
+            // Globe radius
+            const r = 50;
+            // Start and end points on the globe
+            const start = new THREE.Vector3(
+                Math.cos(latA) * Math.sin(lonA),
+                Math.sin(latA),
+                Math.cos(latA) * Math.cos(lonA)
+            ).normalize().multiplyScalar(r);
+            const end = new THREE.Vector3(
+                Math.cos(latB) * Math.sin(lonB),
+                Math.sin(latB),
+                Math.cos(latB) * Math.cos(lonB)
+            ).normalize().multiplyScalar(r);
+
+            // Create multiple control points for a smoother, earth-following arc
+            const points = [];
+            const numPoints = 5;
+            for (let i = 0; i <= numPoints; i++) {
+                const t = i / numPoints;
+                // Slerp between start and end
+                const interp = start.clone().lerp(end, t).normalize();
+                // Raise the arc slightly above the globe, peaking at the midpoint
+                const arcHeight = r + Math.sin(Math.PI * t) * height;
+                points.push(interp.multiplyScalar(arcHeight));
+            }
+            const curve = new THREE.CatmullRomCurve3(points);
+
+            // Tube geometry along the curve
+            const tubeGeometry = new THREE.TubeGeometry(curve, segments, thickness, 8, false);
+            const tubeMaterial = new THREE.MeshStandardMaterial({ color, metalness, transparent: true, opacity,  emissive: 0x00ff00, emissiveIntensity: 1 });
+            const arcMesh = new THREE.Mesh(tubeGeometry, tubeMaterial);
+            return arcMesh;
         }
 
 
