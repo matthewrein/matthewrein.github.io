@@ -74,7 +74,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const params = {
             exportUSDZ: exportUSDZ
         };
-        gui.add(params, 'exportUSDZ').name('Export USDZ v8');
+        gui.add(params, 'exportUSDZ').name('Export USDZ v10');
         gui.open();
 
         //load geojson data from file
@@ -122,7 +122,6 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         }
 
         group.add(borders);
-        scene.add(group);
 
         // After group.add(borders);
         const cityGroup = new THREE.Group();
@@ -141,6 +140,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
             const citySphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             citySphere.position.copy(position);
             citySphere.name = city.name;
+            citySphere.updateWorldMatrix(true)
             cityGroup.add(citySphere);
         });
         group.add(cityGroup);
@@ -169,6 +169,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
                 group.add(arc);
             }
         });
+        scene.add(group);
 
         renderer.setAnimationLoop(animate);
         prepUSDZ();
