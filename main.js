@@ -20,6 +20,19 @@ const highlightedCountries = [
     'Australia'
 ];
 
+const highlightedCities = [
+    { name: 'New York', lat: 40.7128, lon: -74.0060 },
+    { name: 'London', lat: 51.5074, lon: -0.1278 },
+    { name: 'Paris', lat: 48.8566, lon: 2.3522 },
+    { name: 'Tokyo', lat: 35.6895, lon: 139.6917 },
+    { name: 'Sydney', lat: -33.8688, lon: 151.2093 },
+    { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729 },
+    { name: 'Cairo', lat: 30.0444, lon: 31.2357 },
+    { name: 'Moscow', lat: 55.7558, lon: 37.6173 },
+    { name: 'Beijing', lat: 39.9042, lon: 116.4074 },
+    { name: 'Mumbai', lat: 19.0760, lon: 72.8777 }
+];
+
 fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
     .then(async (response) => {
         const data = await response.json()
@@ -112,6 +125,27 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
 
         group.add(borders);
         scene.add(group);
+
+        // After group.add(borders);
+        const cityGroup = new THREE.Group();
+        highlightedCities.forEach(city => {
+            const lat = city.lat * (Math.PI / 180);
+            const lon = (city.lon + 180) * (Math.PI / 180);
+            const x = Math.cos(lat) * Math.sin(lon);
+            const y = Math.sin(lat);
+            const z = Math.cos(lat) * Math.cos(lon);
+            // Place sphere so it sticks out halfway through the surface
+            const surfaceRadius = 49;
+            const sphereRadius = 1; // diameter = 2 * 1.2 (from geometry)
+            const position = new THREE.Vector3(x, y, z).normalize().multiplyScalar(surfaceRadius + sphereRadius / 2);
+            const sphereGeometry = new THREE.SphereGeometry(1.2, 16, 16);
+            const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.7, emissive: 0x00ff00, emissiveIntensity: 1 });
+            const citySphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            citySphere.position.copy(position);
+            citySphere.name = city.name;
+            cityGroup.add(citySphere);
+        });
+        group.add(cityGroup);
 
 
         renderer.setAnimationLoop(animate);
