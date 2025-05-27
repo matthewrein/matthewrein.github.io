@@ -74,7 +74,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         const params = {
             exportUSDZ: exportUSDZ
         };
-        gui.add(params, 'exportUSDZ').name('Export USDZ v10');
+        gui.add(params, 'exportUSDZ').name('Export USDZ');
         gui.open();
 
         //load geojson data from file
@@ -179,8 +179,7 @@ fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/coun
         function animate() {
             var delta = clock.getDelta();
 
-            // Rotate the whole group (scene)
-            group.rotation.y += delta * 0.1; // Adjust speed as needed
+            // Rotate the whole group (scen
 
             controls.update(delta);
             renderer.render(scene, camera);
